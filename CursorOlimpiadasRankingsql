@@ -1,0 +1,34 @@
+DECLARE
+    CURSOR medal_ranking_cursor IS
+        SELECT t.teamname, t.ID_team,
+               COUNT(m.ID_Medal) AS TotalMedals,
+               SUM(CASE WHEN mt.TypeName = 'Oro' THEN 1 ELSE 0 END) AS GoldMedals,
+               SUM(CASE WHEN mt.TypeName = 'Plata' THEN 1 ELSE 0 END) AS SilverMedals,
+               SUM(CASE WHEN mt.TypeName = 'Bronce' THEN 1 ELSE 0 END) AS BronzeMedals
+        FROM competitor c
+        JOIN competitorxcompetition cc ON c.ID_Competitor = cc.ID_Competitor
+        JOIN MedalXCompetitionXCompetitor mc ON cc.ID_CompetitorXCompetition = mc.ID_CompetitorXCompetition
+        JOIN medal m ON mc.ID_Medal = m.ID_Medal
+        JOIN medaltype mt ON m.ID_MedalType = mt.ID_MedalType
+        JOIN team t ON c.ID_Team = t.ID_Team
+        GROUP BY t.ID_Team, t.teamname
+        ORDER BY TotalMedals DESC;
+
+    team_record medal_ranking_cursor%ROWTYPE;
+BEGIN
+    OPEN medal_ranking_cursor;
+    LOOP
+        FETCH medal_ranking_cursor INTO team_record;
+        EXIT WHEN medal_ranking_cursor%NOTFOUND;
+
+        -- Muestra los resultados
+        DBMS_OUTPUT.PUT_LINE('Nombre: ' || team_record.teamname || 
+                             ', Equipo ID: ' || team_record.ID_Team ||  
+                             ', Medallas de Oro: ' || team_record.GoldMedals || 
+                             ', Medallas de Plata: ' || team_record.SilverMedals || 
+                             ', Medallas de Bronce: ' || team_record.BronzeMedals ||
+                             ', Total Medallas: ' || team_record.TotalMedals);
+    END LOOP;
+    CLOSE medal_ranking_cursor;
+END;
+/
