@@ -1,0 +1,51 @@
+CREATE OR REPLACE PROCEDURE Top5Scores (
+    p_ParalympicYear IN NUMBER DEFAULT NULL,
+    p_CompetitionType IN NUMBER DEFAULT NULL
+) AS
+    CURSOR top_scores_cursor 
+    IS
+        SELECT 
+            p.firstname AS CompetitorName, 
+            c.CompetitionName, 
+            t.TeamName, 
+            s.Quantity AS Score
+        FROM 
+            score s
+        JOIN 
+            competition c ON s.ID_Competition = c.ID_Competition
+        JOIN 
+            competitorxcompetition cc ON c.ID_Competition = cc.ID_Competition
+        JOIN 
+            competitor co ON cc.ID_Competitor = co.ID_Competitor
+        JOIN 
+            person p ON co.ID_Person = p.ID_Person
+        JOIN 
+            team t ON co.ID_Team = t.ID_Team
+        JOIN 
+            paralympicxcompetition pc ON c.ID_Competition = pc.ID_Competition
+        JOIN 
+            paralympic pa ON pc.ID_Paralympic = pa.ID_Paralympic
+        WHERE 
+            (p_ParalympicYear IS NULL OR pa.paralympics_year = p_ParalympicYear)
+            AND (p_CompetitionType IS NULL OR c.ID_CompetitionType = p_CompetitionType)
+            AND ROWNUM <= 5
+        ORDER BY 
+            s.Quantity DESC;  -- Limitar a los 5 mejores puntajes
+        
+
+    score_record top_scores_cursor%ROWTYPE;
+BEGIN
+    OPEN top_scores_cursor;
+    LOOP
+        FETCH top_scores_cursor INTO score_record;
+        EXIT WHEN top_scores_cursor%NOTFOUND;
+
+        -- Muestra los resultados
+        DBMS_OUTPUT.PUT_LINE('Competidor: ' || score_record.CompetitorName || 
+                             ', Competición: ' || score_record.CompetitionName || 
+                             ', Equipo: ' || score_record.TeamName || 
+                             ', Puntaje: ' || score_record.Score);
+    END LOOP;
+    CLOSE top_scores_cursor;
+END;
+/
