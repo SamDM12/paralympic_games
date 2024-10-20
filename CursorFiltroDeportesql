@@ -1,0 +1,42 @@
+CREATE OR REPLACE PROCEDURE ListCompetitions (
+    p_CompetitionType IN NUMBER DEFAULT NULL,
+    p_CompetitionDate IN DATE DEFAULT NULL,
+    p_ParalympicYear IN NUMBER DEFAULT NULL
+) AS
+    CURSOR competition_cursor 
+    IS
+        SELECT c.ID_Competition, 
+               c.CompetitionName, 
+               c.CompetitionDate, 
+               p.paralympics_year AS ParalympicYear,
+               p.ID_Country AS ParalympicCountry
+        FROM competition c
+        JOIN paralympicxcompetition pc ON c.ID_Competition = pc.ID_Competition
+        JOIN paralympic p ON pc.ID_Paralympic = p.ID_Paralympic
+        LEFT JOIN competitorxcompetition cc ON c.ID_Competition = cc.ID_Competition
+        LEFT JOIN competitor co ON cc.ID_Competitor = co.ID_Competitor
+        WHERE (p_CompetitionType IS NULL OR c.ID_CompetitionType = p_CompetitionType)
+          AND (p_CompetitionDate IS NULL OR c.CompetitionDate = p_CompetitionDate)
+          AND (p_ParalympicYear IS NULL OR p.paralympics_year = p_ParalympicYear)
+        GROUP BY c.ID_Competition, c.CompetitionName, c.CompetitionDate, p.paralympics_year, p.ID_Country
+        ORDER BY c.CompetitionDate;
+
+    competition_record competition_cursor%ROWTYPE;
+BEGIN
+    OPEN competition_cursor;
+    LOOP
+        FETCH competition_cursor INTO competition_record;
+        EXIT WHEN competition_cursor%NOTFOUND;
+
+        -- Muestra los resultados
+        DBMS_OUTPUT.PUT_LINE('ID Competencia: ' || competition_record.ID_Competition || 
+                             ', Nombre: ' || competition_record.CompetitionName || 
+                             ', Fecha: ' || TO_CHAR(competition_record.CompetitionDate, 'YYYY-MM-DD') ||
+                             ', Año Paralímpico: ' || competition_record.ParalympicYear ||
+                             ', País Paralímpico: ' || competition_record.ParalympicCountry);
+    END LOOP;
+    CLOSE competition_cursor;
+END;
+/
+
+
